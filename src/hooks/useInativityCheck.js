@@ -1,8 +1,7 @@
-import {
-    useEffect,
-    useRef} from 'react'
+import {useEffect} from 'react'
 import useTimeout from './useTimeout'
 import {useLocalStorage} from './useStorage'
+import {debounce} from 'lodash'
 
 /**types
  * onInactivity= função;
@@ -16,8 +15,6 @@ const EventsListened = ['keydown','touchstart','mousemove','scroll','touchmove']
 export function useInactivityCheck(onInactivity,configs){
     const [storageTimeout,
         setStorageTimeout]= useLocalStorage(configs.storage?configs.storage:'__example_timeout:',{expirationTime: new Date().getTime()+configs.timeout})
-    
-      const debounceTimeoutId = useRef(null) 
     
       const {reset} = useTimeout(()=>{
         const time = new Date().getTime()
@@ -35,38 +32,26 @@ export function useInactivityCheck(onInactivity,configs){
         }
     
       },configs.timeout)
-    useEffect(()=>{
-        function debounce(){ 
-            if(!debounceTimeoutId.current){
-              debounceTimeoutId.current = setTimeout(()=>{
-                reset()
-                setStorageTimeout({expirationTime: new Date().getTime()+configs.timeout})
-                debounceTimeoutId.current = null
-              },configs.debounceMaxTime)
-            }else{ 
-              clearTimeout(debounceTimeoutId.current);
-              debounceTimeoutId.current = setTimeout(()=>{
-                setStorageTimeout({expirationTime: new Date().getTime()+configs.timeout})
-                reset()
-                debounceTimeoutId.current = null
-              },configs.debounceMaxTime)
-            }
-          }
-
+    useEffect(()=>{  
+     const debouncedEvent= debounce(()=>{
+            reset();
+            setStorageTimeout({expirationTime: new Date().getTime()+configs.timeout})
+          },configs.debounceMaxTime);
 
         EventsListened.forEach((event)=>{
-          document.addEventListener(event,debounce,false)
+          document.addEventListener(event,debouncedEvent,false)
         })
 
         return ()=>{
           EventsListened.forEach((event)=>{
-            document.removeEventListener(event,debounce)
+            document.removeEventListener(event,debouncedEvent)
           })
           }
         },[reset,
             setStorageTimeout,
             configs.debounceMaxTime,
-            configs.timeout])
+            configs.timeout,
+          ])
 
 
     return [storageTimeout]
