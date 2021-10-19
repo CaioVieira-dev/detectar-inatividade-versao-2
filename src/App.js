@@ -10,7 +10,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-       <p> {Object.assign(storageTimeout).lastAction }</p>
+       <p> {Object.assign(storageTimeout).expirationTime }</p>
       </header>
     </div>
   );
